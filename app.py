@@ -41,16 +41,13 @@ services = [
 @app.route(shortcut + "/services/all", methods=["GET"])
 def api_all():
     # Create a query to get all the services
-    query = "SELECT * FROM services"
+    query = "INSERT INTO `customer details` (Customer_id, FirstName, lastName,Email, phone) VALUES (7, 'Hubet','Smith', 'wdijiei@idjf.com', 3245436546)"
     # Execute the query
     cursor.execute(query)
     # Fetch all the results
-    results = cursor.fetchall()
+    results = mydb.commit()
     # Return the results as JSON
     return jsonify(results)
-
-
-mydb.close()
 
 
 # Create a route for the services page or individual services by id
@@ -74,7 +71,7 @@ def api_id():
     return jsonify(results)
 
 
-mydb.close()
+# mydb.close()
 
 #    results = []
 # for service in services:
@@ -97,7 +94,7 @@ def all_prices():
     return jsonify(results)
 
 
-mydb.close()
+# mydb.close()
 
 
 # Create a route for the prices page or # individual prices by id
@@ -121,7 +118,7 @@ def price_id():
     return jsonify(results)
 
 
-mydb.close()
+# mydb.close()
 
 
 # function to return key for any value
@@ -164,7 +161,7 @@ def high_serv():
         return jsonify({"error": "No services found"})
 
 
-mydb.close()
+# mydb.close()
 
 prices_list = []
 
