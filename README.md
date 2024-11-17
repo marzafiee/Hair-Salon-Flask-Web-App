@@ -1,4 +1,4 @@
-# Hair Salon Web Application
+# Hair Salon Flask Web Application
 
 ## Project Description:
 A Flask web app for managing hair salon services and pricing, allowing users to view, search, and sort services. It uses MySQL for data storage and provides an API for easy access.
