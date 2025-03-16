@@ -20,7 +20,7 @@ shortcut = "/api/v1/resources"
 
 # UPDATED Database config for swapping from mySQL to PostgreSQL
 DATABASE_URL = os.getenv("DATABASE_URL")
-connection_pool = None
+# connection_pool = None
 
 # apparently these dont work so well with vercel, so taking them out for now
 """def get_connection_pool():
