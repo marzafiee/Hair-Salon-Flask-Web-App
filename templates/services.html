@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Boujee Salon - All Services{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h2>Our Services</h2>
+    <p>Browse our complete list of salon services</p>
+</section>
+
+<section class="services">
+    <div class="service-list">
+        {% for service in services %}
+        <div class="service-card">
+            <h3>{{ service.service }}</h3>
+            <p class="price">${{ service.price }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Boujee Salon - Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h2>Welcome to Boujee Salon!</h2>
+    <p>Experience luxury hair care services at affordable prices.</p>
+</section>
+
+<section class="services">
+    <h2>Our Services</h2>
+    <div class="service-list">
+        {% for service in services %}
+        <div class="service-card">
+            <h3>{{ service.service }}</h3>
+            <p class="price">${{ service.price }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="api-info">
+    <h2>API Access</h2>
+    <p>Access our services data through our REST API:</p>
+    <ul>
+        <li><code>GET /api/v1/resources/services/all</code>: Get all services</li>
+        <li><code>GET /api/v1/resources/services?id=X</code>: Get service by ID</li>
+        <li><code>GET /api/v1/resources/prices/all</code>: Get all prices</li>
+        <li><code>GET /api/v1/resources/serv_prices?id=X</code>: Get price by service ID</li>
+        <li><code>GET /api/v1/resources/expensiveservice</code>: Get most expensive service</li>
+        <li><code>GET /api/v1/resources/cheapestservice</code>: Get least expensive service</li>
+        <li><code>GET /api/v1/resources/services/sort</code>: Get services sorted by name</li>
+        <li><code>GET /api/v1/resources/prices/sort</code>: Get services sorted by price</li>
+    </ul>
+</section>
+{% endblock %}

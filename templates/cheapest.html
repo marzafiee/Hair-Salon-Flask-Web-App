@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Boujee Salon - Least Expensive Service{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h2>Least Expensive Service</h2>
+</section>
+
+<section class="service-highlight">
+    <div class="service-card featured">
+        <h3>{{ service.service }}</h3>
+        <p class="price">${{ service.price }}</p>
+        <div class="badge">Best Value</div>
+    </div>
+</section>
+{% endblock %}
