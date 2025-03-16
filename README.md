@@ -3,6 +3,7 @@
 
 A Flask web application for managing hair salon services and pricing, allowing users to view, search, and sort services. It uses MySQL for data storage and provides a RESTful API for easy access.
 
+
 ## Features
 
 * View all services and prices
@@ -13,33 +14,32 @@ A Flask web application for managing hair salon services and pricing, allowing u
 ## Tech Stack
 
 * **Backend**: Flask
-* **Database**: MySQL
+* **Database**: PostgreSQL
 * **Frontend**: HTML/CSS/JavaScript
-* **Tools**: Postman (API testing), XAMPP (for local MySQL database)
+* **Tools**: Postman (API testing), DBeaver (for local hosting of PostgreSQL), Neon (serverless hosting of donnected DBeaver database for vercel app hosting)
 
 ## Setup and Installation
 
 ### Prerequisites
 
-- Python 3.7 or higher
-- XAMPP or MySQL server
+- Python 3.12.4 or higher
+- DBeaver + Neon
 - pip (Python package manager)
 
 ### Database Setup
 
-1. Install XAMPP and start Apache and MySQL from the XAMPP control panel
-2. Create a MySQL database called `boujee_salon`
-3. Configure the database using the provided schema.sql file:
-   ```
-   mysql -u root -p boujee_salon < schema.sql
-   ```
+1. Install DBeaver and configure the settings for your Neon database for PostgreSQL. That is insert the connection string/parameter details from Neon into the setup for DBeaver.
+2. Open a new script and set up tables and relationships.
+3. In Neon, ensure the tables added in the script reflect in the Table view.
+4. In Neon's SQL editor, run th insert queries to populate the tables. Return to Table view to confirm.
+5. Now, the connection between DBeaver and Neon is established amd runs smoothly.
 
 ### Application Setup
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/hairsalon-web-app.git
-   cd hairsalon-web-app
+   git clone https://github.com/InezAnneMarie/hairsalon-flask-web-app.git
+   cd hairsalon-flask-web-app
    ```
 
 2. Create a virtual environment and activate it:
@@ -66,14 +66,14 @@ A Flask web application for managing hair salon services and pricing, allowing u
    export FLASK_ENV=development
    ```
 
-5. Update the database configuration in `config.py` with your MySQL credentials.
+5. Test the app.py database connection in DBeaver with your Neon credentials.
 
 6. Run the application:
    ```
    flask run
    ```
 
-7. Access the application at http://localhost:5000
+7. Access the application at [project link](https://hair-salon-flask-web-app.vercel.app/)
 
 ## API Endpoints
 
@@ -93,26 +93,12 @@ A Flask web application for managing hair salon services and pricing, allowing u
 
 ### Web Interface
 
-1. Navigate to http://localhost:5000 to view the main page
+1. Navigate to [project link](https://hair-salon-flask-web-app.vercel.app/) to view the main page.
 2. Click on "Services" to view all available salon services
-3. Use the search bar to find specific services
-4. Click on column headers to sort by name or price
-
-### API Usage
-
-Example API request using curl:
-
-```
-# Get all services
-curl -X GET http://localhost:5000/api/services
-
-# Add a new service
-curl -X POST http://localhost:5000/api/services \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Premium Haircut", "price":65.00, "duration":45, "category":"Haircut"}'
-```
+3. Click on column headers to sort by name or price
 
 ## Contributing
+-- This is a very basic project for learning purposes. Contributions and constructive criticisms are highly welcome. I still work on this from time to time. Pull requests are welcome :)
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
@@ -127,6 +113,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgements
 
 * Flask documentation
-* MySQL documentation
-* Bootstrap for responsive design
-* FontAwesome for icons
+* Neon blogs
+* PostgreSQL documentation
+
+## Side Note
+
+This project is still under construction (especially with the API testing). What you see now is v2. v1 never ran and it was started in 2023. Recently decided to make changed and improve it so here we are.
+
+Progress over perfection💜
