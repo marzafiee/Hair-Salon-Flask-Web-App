@@ -1,7 +1,7 @@
 # Hair Salon Flask Web Application - The Boujee Salon
 ![alt text](image.png)
 
-A Flask web application for managing hair salon services and pricing, allowing users to view, search, and sort services. It uses MySQL for data storage and provides a RESTful API for easy access.
+A Flask web application for managing hair salon services and pricing, allowing users to view, search, and sort services. It uses PostgreSQL for data storage and provides a RESTful API for easy access.
 
 
 ## Features
