@@ -1,49 +1,56 @@
-# Import the Flask library to create a web application
-import flask
+import flask, os, mysql.connector as mysql
 from flask import request, jsonify, render_template
-import mysql.connector as mysql
-import pymysql
-import os
+
+import psycopg2
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 from dotenv import (
     load_dotenv,
 )  # Import the load_dotenv function from the python-dotenv library to load environment variables from my .env file
-from datetime import datetime
+from datetime import (
+    datetime,
+)  # this was for the bottom of the home page to alwasy be configured to display the current year
 
 load_dotenv()
+
 app = flask.Flask(__name__)
-# Set the Flask application's secret key to a random string
-# app.secret_key = os.urandom(24)
-# Enable the Flask application's debug mode
+
 app.config["DEBUG"] = True
 shortcut = "/api/v1/resources"
 
-db_config = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "boujee_salon"),
-    "port": int(os.getenv("DB_PORT", "3306")),
-    "auth_plugin": "mysql_native_password",
-}
+# UPDATED Database config for swapping from mySQL to PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL")
+connection_pool = None
+
+
+def get_connection_pool():
+    global connection_pool
+    if connection_pool is None:
+        connection_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
+    return connection_pool
 
 
 def get_db_connection():
-    """Create a connection to the MySQL database"""
-    conn = mysql.connect(
-        **db_config
-    )  # Use the db_config dictionary to connect to the database
+    """This is the connection to the PostgreSQL database hosted on Neon and managed on my local DBeaver"""
+    pool = get_connection_pool()
+    conn = pool.getconn()
     return conn
 
 
-# Define a route for the home page (accessible via HTTP GET requests)
+def return_db_connection(conn):
+    """Return connection to the pool"""
+    pool = get_connection_pool()
+    pool.putconn(conn)
+
+
+# our route for the home page (accessible via HTTP GET requests)
 @app.route("/", methods=["GET"])
 def home():
     """Home page route that displays all services"""
     try:
         # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries (dictionary=True means results will be returned as dictionaries)
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch all services and their prices
         cursor.execute(
@@ -58,7 +65,7 @@ def home():
 
         # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         current_year = datetime.now().year
 
@@ -69,7 +76,7 @@ def home():
         return render_template("error.html", error=str(e))
 
 
-# Define an API route to fetch all services (accessible via HTTP GET requests)
+# API route to fetch all services -- yeah we get the accessibility -_-
 @app.route(shortcut + "/services/all", methods=["GET"])
 def api_all():
     """API endpoint to get all services"""
@@ -77,7 +84,7 @@ def api_all():
         # Create a database connection
         conn = get_db_connection()
         # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch all services
         cursor.execute("SELECT * FROM services")
@@ -86,7 +93,7 @@ def api_all():
 
         # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Return the services data as a JSON response
         return jsonify(services)
@@ -95,7 +102,8 @@ def api_all():
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to fetch a specific service by ID (accessible via HTTP GET requests)
+# API route to fetch a specific service by ID (may not use this on the frontend)
+@app.route(shortcut + "/serv_prices", methods=["GET"])
 @app.route(shortcut + "/services", methods=["GET"])
 def api_id():
     """API endpoint to get a service by ID"""
@@ -107,19 +115,16 @@ def api_id():
         return jsonify({"error": "No id field provided. Please specify an id."}), 400
 
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
-
-        # Execute a SQL query to fetch the service with the specified ID
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT * FROM services WHERE id = %s", (id,))
+
         # Fetch one row from the query result
         service = cursor.fetchone()
 
-        # Close the cursor and database connection
+        # Close the cursor and return thee database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # If a service is found, return it as a JSON response
         if service:
@@ -132,24 +137,22 @@ def api_id():
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to fetch all prices (accessible via HTTP GET requests)
+# API route to fetch all prices
 @app.route(shortcut + "/prices/all", methods=["GET"])
 def all_prices():
     """API endpoint to get all prices"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(Cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch all prices
         cursor.execute("SELECT * FROM prices")
         # Fetch all rows from the query result
         prices = cursor.fetchall()
 
-        # Close the cursor and database connection
+        # Close the cursor and return our database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Return the prices data as a JSON response
         return jsonify(prices)
@@ -158,54 +161,40 @@ def all_prices():
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to fetch the price of a specific service by service ID (accessible via HTTP GET requests)
+# API route to fetch the price of a specific service by service ID (may not use this on the frontend)
 @app.route(shortcut + "/serv_prices", methods=["GET"])
 def price_id():
     """API endpoint to get a price by service ID"""
-    # Check if the 'id' parameter is provided in the request URL
     if "id" in request.args:
-        id = int(request.args["id"])  # Convert the 'id' parameter to an integer
+        id = int(request.args["id"])
     else:
-        # If 'id' is not provided, return an error message and a 400 status code
         return jsonify({"error": "No id field provided. Please specify an id."}), 400
 
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
-
-        # Execute a SQL query to fetch the price for the specified service ID
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT * FROM prices WHERE service_id = %s", (id,))
-        # Fetch one row from the query result
         price = cursor.fetchone()
-
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
-        # If a price is found, return it as a JSON response
         if price:
             return jsonify(price)
         else:
-            # If no price is found, return an error message and a 404 status code
             return jsonify({"error": "Price not found"}), 404
     except Exception as e:
-        # If an error occurs, return a JSON response with the error message and a 500 status code
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to fetch the most expensive service (accessible via HTTP GET requests)
+# API route to fetch the most expensive service
 @app.route(shortcut + "/expensiveservice", methods=["GET"])
 def high_serv():
     """API endpoint to get the most expensive service"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Execute a SQL query to fetch the most expensive service
+        # Execute a SQL query to fetch the most expensive service where we expectonly one result, thu LIMIT = 1
         cursor.execute(
             """
             SELECT s.id, s.name as service, p.price 
@@ -215,33 +204,25 @@ def high_serv():
             LIMIT 1
         """
         )
-        # Fetch one row from the query result
         service = cursor.fetchone()
-
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
-        # If a service is found, return it as a JSON response
-        if service:
+        if service:  # is found
             return jsonify(service)
         else:
-            # If no service is found, return an error message and a 404 status code
             return jsonify({"error": "No services found"}), 404
     except Exception as e:
-        # If an error occurs, return a JSON response with the error message and a 500 status code
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to fetch the least expensive service (accessible via HTTP GET requests)
+# API route to fetch the least expensive service
 @app.route(shortcut + "/cheapestservice", methods=["GET"])
 def low_serv():
     """API endpoint to get the least expensive service"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch the least expensive service
         cursor.execute(
@@ -256,30 +237,25 @@ def low_serv():
         # Fetch one row from the query result
         service = cursor.fetchone()
 
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # If a service is found, return it as a JSON response
         if service:
             return jsonify(service)
         else:
-            # If no service is found, return an error message and a 404 status code
             return jsonify({"error": "No services found"}), 404
     except Exception as e:
-        # If an error occurs, return a JSON response with the error message and a 500 status code
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to sort services alphabetically (accessible via HTTP GET requests)
+# API route to sort services alphabetically
 @app.route(shortcut + "/services/sort", methods=["GET"])
 def sort_serv():
     """API endpoint to sort services alphabetically"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch services sorted by name in ascending order
         cursor.execute(
@@ -293,26 +269,21 @@ def sort_serv():
         # Fetch all rows from the query result
         services = cursor.fetchall()
 
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
-        # Return the sorted services data as a JSON response
         return jsonify(services)
     except Exception as e:
-        # If an error occurs, return a JSON response with the error message and a 500 status code
         return jsonify({"error": str(e)}), 500
 
 
-# Define an API route to sort services by price (accessible via HTTP GET requests)
+# API route to sort services by price
 @app.route(shortcut + "/prices/sort", methods=["GET"])
 def sort_price():
     """API endpoint to sort services by price"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch services sorted by price in ascending order
         cursor.execute(
@@ -326,26 +297,22 @@ def sort_price():
         # Fetch all rows from the query result
         services = cursor.fetchall()
 
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Return the sorted services data as a JSON response
         return jsonify(services)
     except Exception as e:
-        # If an error occurs, return a JSON response with the error message and a 500 status code
         return jsonify({"error": str(e)}), 500
 
 
-# Define a web route to view all services in the browser (accessible via HTTP GET requests)
+# Web route to view all services in the browser
 @app.route("/services", methods=["GET"])
 def view_services():
     """Web route to view all services"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch all services and their prices
         cursor.execute(
@@ -358,28 +325,22 @@ def view_services():
         # Fetch all rows from the query result
         services = cursor.fetchall()
 
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
-        # Render the services.html template and pass the services data to it
         return render_template("services.html", services=services)
     except Exception as e:
-        # If an error occurs, render the error.html template and pass the error message
         return render_template("error.html", error=str(e))
 
 
-# Define a web route to view the most expensive service in the browser (accessible via HTTP GET requests)
+# Web route to view the most expensive service in the browser
 @app.route("/expensive", methods=["GET"])
 def most_expensive():
     """Web route to view the most expensive service"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Execute a SQL query to fetch the most expensive service
         cursor.execute(
             """
             SELECT s.id, s.name as service, p.price 
@@ -389,29 +350,24 @@ def most_expensive():
             LIMIT 1
         """
         )
-        # Fetch one row from the query result
         service = cursor.fetchone()
-
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Render the expensive.html template and pass the service data to it
         return render_template("expensive.html", service=service)
     except Exception as e:
-        # If an error occurs, render the error.html template and pass the error message
+        # Render the error.html template and pass the error message
         return render_template("error.html", error=str(e))
 
 
-# Define a web route to view the least expensive service in the browser (accessible via HTTP GET requests)
+# Web route to view the least expensive service in the browser
 @app.route("/cheapest", methods=["GET"])
 def least_expensive():
     """Web route to view the least expensive service"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch the least expensive service
         cursor.execute(
@@ -423,29 +379,24 @@ def least_expensive():
             LIMIT 1
         """
         )
-        # Fetch one row from the query result
         service = cursor.fetchone()
 
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Render the cheapest.html template and pass the service data to it
         return render_template("cheapest.html", service=service)
     except Exception as e:
-        # If an error occurs, render the error.html template and pass the error message
         return render_template("error.html", error=str(e))
 
 
-# Define a web route to view services sorted by name in the browser (accessible via HTTP GET requests)
+# Web route to view services sorted by name in the browser
 @app.route("/sort_by_name", methods=["GET"])
 def sort_by_name():
     """Web route to view services sorted by name"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch services sorted by name in ascending order
         cursor.execute(
@@ -456,12 +407,10 @@ def sort_by_name():
             ORDER BY s.name ASC
         """
         )
-        # Fetch all rows from the query result
+        # Fetch ALL rows from the query result
         services = cursor.fetchall()
-
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Render the sort_name.html template and pass the sorted services data to it
         return render_template("sort_name.html", services=services, sort_type="Name")
@@ -470,15 +419,13 @@ def sort_by_name():
         return render_template("error.html", error=str(e))
 
 
-# Define a web route to view services sorted by price in the browser (accessible via HTTP GET requests)
+# Web route to view services sorted by price in the browser
 @app.route("/sort_by_price", methods=["GET"])
 def sort_by_price():
     """Web route to view services sorted by price"""
     try:
-        # Create a database connection
         conn = get_db_connection()
-        # Create a cursor to execute SQL queries
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute a SQL query to fetch services sorted by price in ascending order
         cursor.execute(
@@ -489,12 +436,10 @@ def sort_by_price():
             ORDER BY p.price ASC
         """
         )
-        # Fetch all rows from the query result
+        # Fetch ALL rows from the query result
         services = cursor.fetchall()
-
-        # Close the cursor and database connection
         cursor.close()
-        conn.close()
+        return_db_connection(conn)
 
         # Render the sort_price.html template and pass the sorted services data to it
         return render_template("sort_price.html", services=services, sort_type="Price")
