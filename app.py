@@ -22,25 +22,28 @@ shortcut = "/api/v1/resources"
 DATABASE_URL = os.getenv("DATABASE_URL")
 connection_pool = None
 
-
-def get_connection_pool():
+# apparently these dont work so well with vercel, so taking them out for now
+"""def get_connection_pool():
     global connection_pool
     if connection_pool is None:
         connection_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
-    return connection_pool
+    return connection_pool'
+"""
 
 
 def get_db_connection():
     """This is the connection to the PostgreSQL database hosted on Neon and managed on my local DBeaver"""
-    pool = get_connection_pool()
-    conn = pool.getconn()
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     return conn
 
 
+# was advised to remove this too for simpler and more direct connections
+''''
 def return_db_connection(conn):
     """Return connection to the pool"""
     pool = get_connection_pool()
     pool.putconn(conn)
+'''
 
 
 # our route for the home page (accessible via HTTP GET requests)
@@ -50,7 +53,7 @@ def home():
     try:
         # Create a database connection
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch all services and their prices
         cursor.execute(
@@ -65,7 +68,7 @@ def home():
 
         # Close the cursor and database connection
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         current_year = datetime.now().year
 
@@ -84,7 +87,7 @@ def api_all():
         # Create a database connection
         conn = get_db_connection()
         # Create a cursor to execute SQL queries
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch all services
         cursor.execute("SELECT * FROM services")
@@ -93,7 +96,7 @@ def api_all():
 
         # Close the cursor and database connection
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Return the services data as a JSON response
         return jsonify(services)
@@ -109,14 +112,14 @@ def api_id():
     """API endpoint to get a service by ID"""
     # Check if the 'id' parameter is provided in the request URL
     if "id" in request.args:
-        id = int(request.args["id"])  # Convert the 'id' parameter to an integer
+        id = int(request.args["id"])
     else:
         # If 'id' is not provided, return an error message and a 400 status code
         return jsonify({"error": "No id field provided. Please specify an id."}), 400
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM services WHERE id = %s", (id,))
 
         # Fetch one row from the query result
@@ -124,7 +127,7 @@ def api_id():
 
         # Close the cursor and return thee database connection
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # If a service is found, return it as a JSON response
         if service:
@@ -143,16 +146,13 @@ def all_prices():
     """API endpoint to get all prices"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(Cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
-        # Execute a SQL query to fetch all prices
         cursor.execute("SELECT * FROM prices")
-        # Fetch all rows from the query result
         prices = cursor.fetchall()
 
-        # Close the cursor and return our database connection
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Return the prices data as a JSON response
         return jsonify(prices)
@@ -172,11 +172,11 @@ def price_id():
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM prices WHERE service_id = %s", (id,))
         price = cursor.fetchone()
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         if price:
             return jsonify(price)
@@ -192,7 +192,7 @@ def high_serv():
     """API endpoint to get the most expensive service"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch the most expensive service where we expectonly one result, thu LIMIT = 1
         cursor.execute(
@@ -206,7 +206,7 @@ def high_serv():
         )
         service = cursor.fetchone()
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         if service:  # is found
             return jsonify(service)
@@ -222,7 +222,7 @@ def low_serv():
     """API endpoint to get the least expensive service"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch the least expensive service
         cursor.execute(
@@ -238,7 +238,7 @@ def low_serv():
         service = cursor.fetchone()
 
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # If a service is found, return it as a JSON response
         if service:
@@ -255,7 +255,7 @@ def sort_serv():
     """API endpoint to sort services alphabetically"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch services sorted by name in ascending order
         cursor.execute(
@@ -270,7 +270,7 @@ def sort_serv():
         services = cursor.fetchall()
 
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         return jsonify(services)
     except Exception as e:
@@ -283,7 +283,7 @@ def sort_price():
     """API endpoint to sort services by price"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch services sorted by price in ascending order
         cursor.execute(
@@ -298,7 +298,7 @@ def sort_price():
         services = cursor.fetchall()
 
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Return the sorted services data as a JSON response
         return jsonify(services)
@@ -312,7 +312,7 @@ def view_services():
     """Web route to view all services"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch all services and their prices
         cursor.execute(
@@ -326,7 +326,7 @@ def view_services():
         services = cursor.fetchall()
 
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         return render_template("services.html", services=services)
     except Exception as e:
@@ -339,7 +339,7 @@ def most_expensive():
     """Web route to view the most expensive service"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         cursor.execute(
             """
@@ -351,8 +351,9 @@ def most_expensive():
         """
         )
         service = cursor.fetchone()
+
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Render the expensive.html template and pass the service data to it
         return render_template("expensive.html", service=service)
@@ -367,7 +368,7 @@ def least_expensive():
     """Web route to view the least expensive service"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch the least expensive service
         cursor.execute(
@@ -382,7 +383,7 @@ def least_expensive():
         service = cursor.fetchone()
 
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Render the cheapest.html template and pass the service data to it
         return render_template("cheapest.html", service=service)
@@ -396,7 +397,7 @@ def sort_by_name():
     """Web route to view services sorted by name"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch services sorted by name in ascending order
         cursor.execute(
@@ -410,7 +411,7 @@ def sort_by_name():
         # Fetch ALL rows from the query result
         services = cursor.fetchall()
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Render the sort_name.html template and pass the sorted services data to it
         return render_template("sort_name.html", services=services, sort_type="Name")
@@ -425,7 +426,7 @@ def sort_by_price():
     """Web route to view services sorted by price"""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
 
         # Execute a SQL query to fetch services sorted by price in ascending order
         cursor.execute(
@@ -439,7 +440,7 @@ def sort_by_price():
         # Fetch ALL rows from the query result
         services = cursor.fetchall()
         cursor.close()
-        return_db_connection(conn)
+        conn.close()
 
         # Render the sort_price.html template and pass the sorted services data to it
         return render_template("sort_price.html", services=services, sort_type="Price")
@@ -448,6 +449,8 @@ def sort_by_price():
         return render_template("error.html", error=str(e))
 
 
-# Run the Flask application if this script is executed directly
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+# running it locally
+# if __name__ == "__main__":
+#    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+app = app
