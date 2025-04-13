@@ -1,0 +1,239 @@
+/* for every thing on the page, we are removing default styles like bullet points, margins, etc*/
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  text-decoration: none;
+  list-style: none;
+  box-sizing: border-box;
+}
+
+:root {
+  /* to declare a variable in CSS, we use 2 hyphens -- and then the name of the variable */
+  --color-primary: #6c63ff;
+  --color-success: #00bf8e;
+  --color-warning: #f7c84b;
+  --color-danger: #f75842;
+  --color-danger-variant: rgba(247, 88, 66, 0.4);
+  --color-white: #fff;
+  --color-light: rgba(255, 255, 255, 0.7);
+  --color-black: #000;
+  --color-bg: #1f2641;
+  --color-bgl: #2e3267;
+  --color-bg2: #424890;
+
+  /* width for large, medium and small devices */
+  --container-width-lg: 80%;
+  --container-width-md: 90%;
+  --container-width-sm: 94%;
+
+  --transition: all 400ms ease;
+}
+
+/* note: changing any color here would change every element on the page with that color */
+
+body {
+  font-family: "Montserrat", sans-serif;
+  line-height: 1.7;
+  color: var(--color-white);
+  background: var(--color-bg);
+}
+
+.container {
+  /* helps us align the contents of our page */
+  width: var(--container-width-lg);
+  margin: 0 auto;
+}
+
+section {
+  padding: 6rem 0
+}
+
+section h2 {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  line-height: 1.2;
+}
+
+/* to target them individually: */
+h1 {
+  font-size: 2.4rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.6rem;
+}
+
+h4 {
+  font-size: 1.3rem;
+}
+
+/* giving every anchor tag a color of white */
+a {
+  color: var(--color-white);
+}
+
+/* for images */
+img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* for buttons - in a .btn class*/
+.btn {
+  display: inline-block;
+  background: var(--color-white);
+  color: var(--color-black);
+  padding: 1rem 2rem;
+  /* where 1rem : top and bottom and 2rem is for left and right */
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn:hover {
+  background: transparent;
+  color: var(--color-white);
+  border-color: var(--color-white);
+}
+
+.btn-primary {
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+/* =========== NAVIGATION BAR ========= */
+nav {
+  background: transparent;
+  width: 100vw;
+  height: 5rem;
+  position: fixed;
+  /* nav bar would remain even if we were to scroll */
+  top: 0;
+  /* always at the top */
+  z-index: 11;
+}
+
+.nav__container {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* logo styling */
+.logo {
+  margin-right: auto;
+  /* pushes the logo to the far left */
+}
+
+.logo h4 {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+/* navigation menu styling */
+.nav__menu {
+  display: flex;
+  align-items: center;
+  gap: 4rem;
+  margin-left: auto;
+  /* this pushes the navigation menu to the right */
+}
+
+.nav__menu a {
+  font-size: 0.9rem;
+  transition: var(--transition);
+  /* this kind of smoothens the change of colours when you hover over the nav buttons */
+}
+
+.nav__menu a:hover {
+  color: var(--color-bg2);
+}
+
+nav button {
+  display: none;
+}
+
+/* media query for mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .nav__menu {
+    display: none;
+    /* hide menu on mobile by default */
+  }
+
+  nav button {
+    display: inline-block;
+    /* this shows menu buttons on mobile */
+    font-size: 1.8rem;
+    color: var(--color-white);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  #close-menu-btn {
+    display: none;
+  }
+}
+
+/* =========== HEADER SECTION ========= */
+header {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f0eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.header__container {
+  width: var(--container-width-lg);
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.header__center {
+  text-align: center;
+}
+
+.header__center h1 {
+  font-family: 'Bodoni Moda', serif;
+  font-size: 45.5056px;
+  font-weight: 500;
+  color: #975130;
+  /* (RGB 151, 81, 48) */
+  text-align: -webkit-center;
+  position: relative;
+}
+
+/* the background image that would go behind my text */
+header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../frontend/images/image1.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
