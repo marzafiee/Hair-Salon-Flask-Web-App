@@ -16,7 +16,7 @@ A Flask web application for managing hair salon services and pricing, allowing u
 * **Backend**: Flask
 * **Database**: PostgreSQL
 * **Frontend**: HTML/CSS/JavaScript
-* **Tools**: Postman (API testing), DBeaver (for local hosting of PostgreSQL), Neon (serverless hosting of donnected DBeaver database for vercel app hosting)
+* **Tools**: Postman (API testing), DBeaver (for local hosting of PostgreSQL), Neon (serverless hosting of connected DBeaver database for vercel app hosting)
 
 ## Setup and Installation
 
